@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sprout — Budget & Net Worth</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --cream: #fff8ee;
+    --panel: #ffffff;
+    --coral: #ff7a6b;
+    --coral-soft: #ffe3de;
+    --sun: #ffc857;
+    --sun-soft: #fff3d6;
+    --mint: #4cc9a7;
+    --mint-soft: #dcf5ec;
+    --sky: #5b9bff;
+    --sky-soft: #e2ecff;
+    --lav: #9b8cff;
+    --lav-soft: #ece7ff;
+    --ink: #2c2740;
+    --ink-dim: #837c99;
+    --line: #f0e9db;
+    --danger: #ff5c5c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--cream); font-family: 'Inter', sans-serif; color: var(--ink); }
+  h1, h2, h3, .display { font-family: 'Baloo 2', sans-serif; }
+
+  #app { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  #sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--panel);
+    border-right: 2px solid var(--line);
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  #brand { display: flex; align-items: center; gap: 8px; font-family: 'Baloo 2'; font-weight: 800; font-size: 22px; margin-bottom: 22px; padding: 0 8px; }
+  #brand .leaf { font-size: 26px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 14px; border-radius: 14px; cursor: pointer;
+    font-weight: 600; font-size: 14.5px; color: var(--ink-dim);
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-item:hover { background: var(--cream); }
+  .nav-item.active { background: var(--coral); color: white; }
+  .nav-item .ic { font-size: 17px; }
+
+  #main { flex: 1; padding: 30px 36px; max-width: 1180px; }
+  .page-title { font-size: 26px; font-weight: 800; margin: 0 0 4px; }
+  .page-sub { color: var(--ink-dim); margin: 0 0 22px; font-size: 14px; }
+
+  .grid { display: grid; gap: 18px; }
+  .grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid.cols-2 { grid-template-columns: 1.3fr 1fr; }
+  @media (max-width: 1000px) { .grid.cols-4, .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--panel);
+    border-radius: 22px;
+    padding: 22px;
+    border: 2px solid var(--line);
+    position: relative;
+    overflow: hidden;
+  }
+  .card h3 { margin: 0 0 14px; font-size: 15px; font-weight: 700; }
+
+  .hero-networth {
+    background: linear-gradient(135deg, var(--coral), var(--sun));
+    color: white;
+    border: none;
+  }
+  .hero-networth .blob {
+    position: absolute; width: 220px; height: 220px; border-radius: 50%;
+    background: rgba(255,255,255,0.12); top: -80px; right: -60px;
+  }
+  .hero-networth .label { font-size: 13px; opacity: 0.9; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+  .hero-networth .amount { font-family: 'Baloo 2'; font-size: 42px; font-weight: 800; margin: 6px 0 2px; }
+  .hero-networth .delta { font-size: 13px; font-weight: 600; opacity: 0.95; }
+
+  .stat-card .label { font-size: 12.5px; color: var(--ink-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+  .stat-card .val { font-family: 'Baloo 2'; font-size: 26px; font-weight: 800; margin-top: 6px; }
+  .stat-card .sub { font-size: 12.5px; color: var(--ink-dim); margin-top: 4px; }
+
+  .account-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .account-row:last-child { border-bottom: none; }
+  .acc-left { display: flex; align-items: center; gap: 10px; }
+  .acc-badge { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .acc-name { font-weight: 700; font-size: 13.5px; }
+  .acc-type { font-size: 11.5px; color: var(--ink-dim); }
+  .acc-bal { font-weight: 700; font-family: 'Baloo 2'; font-size: 15px; }
+  .acc-bal.neg { color: var(--danger); }
+
+  .btn {
+    background: var(--coral); color: white; border: none; border-radius: 12px;
+    padding: 10px 18px; font-weight: 700; font-size: 13.5px; cursor: pointer;
+    font-family: 'Inter'; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { opacity: 0.92; }
+  .btn.ghost { background: var(--cream); color: var(--ink); border: 2px solid var(--line); }
+
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .toolbar input, .toolbar select {
+    font-family: 'Inter'; border: 2px solid var(--line); border-radius: 12px; padding: 9px 12px; font-size: 13.5px; background: white;
+  }
+  .toolbar input { flex: 1; min-width: 180px; }
+
+  table.tx-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.tx-table th { text-align: left; padding: 8px 10px; color: var(--ink-dim); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 2px solid var(--line); }
+  table.tx-table td { padding: 10px; border-bottom: 1px solid var(--line); }
+  .cat-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+  .amt-pos { color: var(--mint); font-weight: 700; }
+  .amt-neg { color: var(--ink); font-weight: 700; }
+
+  .budget-card .cat-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .budget-card .cat-name { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+  .budget-bar-track { background: var(--cream); border-radius: 999px; height: 12px; overflow: hidden; }
+  .budget-bar-fill { height: 100%; border-radius: 999px; transition: width 0.4s; }
+  .budget-nums { display: flex; justify-content: space-between; margin-top: 6px; font-size: 12px; color: var(--ink-dim); }
+  .budget-edit { border: none; background: transparent; color: var(--ink-dim); cursor: pointer; font-size: 12px; text-decoration: underline; }
+
+  .recur-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .recur-row:last-child { border-bottom: none; }
+  .recur-name { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 10px; }
+  .recur-meta { font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
+  .recur-amt { font-family: 'Baloo 2'; font-weight: 800; font-size: 15px; }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(44,39,64,0.35); display: none;
+    align-items: center; justify-content: center; z-index: 50;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: white; border-radius: 22px; padding: 26px; width: 380px; max-width: 90vw;
+    border: 2px solid var(--line);
+  }
+  .modal h3 { margin-top: 0; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; font-weight: 700; color: var(--ink-dim); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .field input, .field select {
+    width: 100%; padding: 10px 12px; border-radius: 10px; border: 2px solid var(--line); font-family: 'Inter'; font-size: 13.5px;
+  }
+  .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+
+  .chart-wrap { position: relative; height: 260px; }
+  .empty { color: var(--ink-dim); font-size: 13px; padding: 20px 0; text-align: center; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="sidebar">
+    <div id="brand"><span class="leaf">🌱</span> Sprout</div>
+    <div class="nav-item active" data-page="dashboard"><span class="ic">🏡</span> Dashboard</div>
+    <div class="nav-item" data-page="transactions"><span class="ic">🧾</span> Transactions</div>
+    <div class="nav-item" data-page="budgets"><span class="ic">🎯</span> Budgets</div>
+    <div class="nav-item" data-page="recurring"><span class="ic">🔁</span> Recurring</div>
+    <div class="nav-item" data-page="trends"><span class="ic">📈</span> Trends</div>
+  </div>
+  <div id="main"></div>
+</div>
+
+<div class="modal-backdrop" id="tx-modal-backdrop">
+  <div class="modal">
+    <h3>Add a transaction</h3>
+    <div class="field"><label>Merchant</label><input id="f-merchant" placeholder="e.g. Trader Joe's" /></div>
+    <div class="field"><label>Amount ($ — positive = income)</label><input id="f-amount" type="number" step="0.01" placeholder="-42.50" /></div>
+    <div class="field"><label>Category</label><select id="f-category"></select></div>
+    <div class="field"><label>Account</label><select id="f-account"></select></div>
+    <div class="field"><label>Date</label><input id="f-date" type="date" /></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="tx-cancel" style="flex:1">Cancel</button>
+      <button class="btn" id="tx-save" style="flex:1">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------------- Sample Data ----------------
+const CATEGORIES = [
+  { id: "groceries", name: "Groceries", emoji: "🥦", color: "#4cc9a7", soft: "#dcf5ec", budget: 500 },
+  { id: "dining", name: "Dining Out", emoji: "🍜", color: "#ff7a6b", soft: "#ffe3de", budget: 220 },
+  { id: "transport", name: "Transport", emoji: "🚗", color: "#5b9bff", soft: "#e2ecff", budget: 150 },
+  { id: "shopping", name: "Shopping", emoji: "🛍️", color: "#9b8cff", soft: "#ece7ff", budget: 200 },
+  { id: "entertainment", name: "Entertainment", emoji: "🎬", color: "#ffc857", soft: "#fff3d6", budget: 100 },
+  { id: "bills", name: "Bills & Utilities", emoji: "💡", color: "#ff9f6b", soft: "#ffe8db", budget: 260 },
+  { id: "subscriptions", name: "Subscriptions", emoji: "📺", color: "#6bd1ff", soft: "#e0f6ff", budget: 60 },
+  { id: "health", name: "Health & Fitness", emoji: "💪", color: "#69c98a", soft: "#e3f6e9", budget: 90 },
+  { id: "rent", name: "Rent", emoji: "🏠", color: "#c98a5b", soft: "#f5e6da", budget: 1650 },
+  { id: "income", name: "Income", emoji: "💰", color: "#2fae7a", soft: "#dcf5ec", budget: 0 },
+];
+const catById = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
+
+const ACCOUNTS = [
+  { id: "chk", name: "Everyday Checking", type: "Checking", emoji: "🏦", balance: 4210.52 },
+  { id: "sav", name: "Rainy Day Savings", type: "Savings", emoji: "🌦️", balance: 12840.00 },
+  { id: "inv", name: "Grow Invest", type: "Investing", emoji: "🌳", balance: 18320.75 },
+  { id: "cc", name: "Everyday Rewards Card", type: "Credit Card", emoji: "💳", balance: -1120.34 },
+];
+
+let TRANSACTIONS = [
+  { id: 1, date: "2026-06-01", merchant: "Skyline Properties", amount: -1650, category: "rent", account: "chk" },
+  { id: 2, date: "2026-06-01", merchant: "Acme Corp Payroll", amount: 3120, category: "income", account: "chk" },
+  { id: 3, date: "2026-06-02", merchant: "Trader Joe's", amount: -86.40, category: "groceries", account: "chk" },
+  { id: 4, date: "2026-06-03", merchant: "Netflix", amount: -15.49, category: "subscriptions", account: "cc" },
+  { id: 5, date: "2026-06-04", merchant: "Spotify", amount: -11.99, category: "subscriptions", account: "cc" },
+  { id: 6, date: "2026-06-05", merchant: "Shell Gas", amount: -42.10, category: "transport", account: "cc" },
+  { id: 7, date: "2026-06-06", merchant: "Ramen House", amount: -28.75, category: "dining", account: "cc" },
+  { id: 8, date: "2026-06-08", merchant: "Whole Foods", amount: -102.30, category: "groceries", account: "chk" },
+  { id: 9, date: "2026-06-09", merchant: "AMC Theatres", amount: -34.00, category: "entertainment", account: "cc" },
+  { id: 10, date: "2026-06-10", merchant: "ComEd Electric", amount: -78.20, category: "bills", account: "chk" },
+  { id: 11, date: "2026-06-12", merchant: "Uber", amount: -18.60, category: "transport", account: "cc" },
+  { id: 12, date: "2026-06-14", merchant: "Planet Fitness", amount: -24.99, category: "health", account: "cc" },
+  { id: 13, date: "2026-06-15", merchant: "Acme Corp Payroll", amount: 3120, category: "income", account: "chk" },
+  { id: 14, date: "2026-06-16", merchant: "Target", amount: -64.20, category: "shopping", account: "cc" },
+  { id: 15, date: "2026-06-18", merchant: "Trader Joe's", amount: -74.10, category: "groceries", account: "chk" },
+  { id: 16, date: "2026-06-20", merchant: "Comcast Internet", amount: -70.00, category: "bills", account: "chk" },
+  { id: 17, date: "2026-06-22", merchant: "Sushi Nara", amount: -55.30, category: "dining", account: "cc" },
+  { id: 18, date: "2026-06-25", merchant: "Amazon", amount: -48.90, category: "shopping", account: "cc" },
+  { id: 19, date: "2026-06-28", merchant: "Shell Gas", amount: -39.80, category: "transport", account: "cc" },
+  { id: 20, date: "2026-07-01", merchant: "Skyline Properties", amount: -1650, category: "rent", account: "chk" },
+  { id: 21, date: "2026-07-01", merchant: "Acme Corp Payroll", amount: 3120, category: "income", account: "chk" },
+  { id: 22, date: "2026-07-02", merchant: "Trader Joe's", amount: -91.20, category: "groceries", account: "chk" },
+  { id: 23, date: "2026-07-03", merchant: "Netflix", amount: -15.49, category: "subscriptions", account: "cc" },
+  { id: 24, date: "2026-07-04", merchant: "Spotify", amount: -11.99, category: "subscriptions", account: "cc" },
+  { id: 25, date: "2026-07-05", merchant: "Shell Gas", amount: -45.00, category: "transport", account: "cc" },
+  { id: 26, date: "2026-07-07", merchant: "Taco Spot", amount: -22.40, category: "dining", account: "cc" },
+  { id: 27, date: "2026-07-09", merchant: "Whole Foods", amount: -110.60, category: "groceries", account: "chk" },
+  { id: 28, date: "2026-07-10", merchant: "ComEd Electric", amount: -84.50, category: "bills", account: "chk" },
+  { id: 29, date: "2026-07-11", merchant: "Steam", amount: -29.99, category: "entertainment", account: "cc" },
+  { id: 30, date: "2026-07-13", merchant: "Uber", amount: -21.40, category: "transport", account: "cc" },
+  { id: 31, date: "2026-07-14", merchant: "Planet Fitness", amount: -24.99, category: "health", account: "cc" },
+  { id: 32, date: "2026-07-15", merchant: "Acme Corp Payroll", amount: 3120, category: "income", account: "chk" },
+  { id: 33, date: "2026-07-17", merchant: "Zara", amount: -112.00, category: "shopping", account: "cc" },
+  { id: 34, date: "2026-07-19", merchant: "Trader Joe's", amount: -68.40, category: "groceries", account: "chk" },
+  { id: 35, date: "2026-07-20", merchant: "Comcast Internet", amount: -70.00, category: "bills", account: "chk" },
+  { id: 36, date: "2026-07-23", merchant: "Ramen House", amount: -31.10, category: "dining", account: "cc" },
+  { id: 37, date: "2026-07-26", merchant: "Amazon", amount: -73.55, category: "shopping", account: "cc" },
+  { id: 38, date: "2026-07-29", merchant: "Shell Gas", amount: -41.20, category: "transport", account: "cc" },
+  { id: 39, date: "2026-08-01", merchant: "Skyline Properties", amount: -1650, category: "rent", account: "chk" },
+  { id: 40, date: "2026-08-01", merchant: "Acme Corp Payroll", amount: 3120, category: "income", account: "chk" },
+  { id: 41, date: "2026-08-02", merchant: "Trader Joe's", amount: -79.85, category: "groceries", account: "chk" },
+  { id: 42, date: "2026-08-03", merchant: "Netflix", amount: -15.49, category: "subscriptions", account: "cc" },
+  { id: 43, date: "2026-08-04", merchant: "Spotify", amount: -11.99, category: "subscriptions", account: "cc" },
+  { id: 44, date: "2026-08-05", merchant: "Shell Gas", amount: -43.60, category: "transport", account: "cc" },
+  { id: 45, date: "2026-08-06", merchant: "Ramen House", amount: -26.90, category: "dining", account: "cc" },
+  { id: 46, date: "2026-08-08", merchant: "Whole Foods", amount: -96.15, category: "groceries", account: "chk" },
+  { id: 47, date: "2026-08-09", merchant: "AMC Theatres", amount: -30.00, category: "entertainment", account: "cc" },
+  { id: 48, date: "2026-08-10", merchant: "ComEd Electric", amount: -81.30, category: "bills", account: "chk" },
+  { id: 49, date: "2026-08-11", merchant: "Planet Fitness", amount: -24.99, category: "health", account: "cc" },
+  { id: 50, date: "2026-08-11", merchant: "Target", amount: -55.40, category: "shopping", account: "cc" },
+];
+let nextId = 51;
+
+const NET_WORTH_HISTORY = [
+  { month: "Mar", value: 27100 },
+  { month: "Apr", value: 28650 },
+  { month: "May", value: 30420 },
+  { month: "Jun", value: 31980 },
+  { month: "Jul", value: 33510 },
+  { month: "Aug", value: 34250 },
+];
+
+// ---------------- Helpers ----------------
+const fmt = (n) => (n < 0 ? "-$" + Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                          : "$" + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+const fmtShort = (n) => "$" + Math.round(n).toLocaleString();
+
+function currentMonthKey() { return "2026-08"; }
+function monthKeyOf(dateStr) { return dateStr.slice(0, 7); }
+
+function spendingByCategory(monthKey) {
+  const out = {};
+  CATEGORIES.forEach(c => out[c.id] = 0);
+  TRANSACTIONS.filter(t => monthKeyOf(t.date) === monthKey && t.amount < 0).forEach(t => {
+    out[t.category] = (out[t.category] || 0) + Math.abs(t.amount);
+  });
+  return out;
+}
+
+function totalNetWorth() {
+  return ACCOUNTS.reduce((s, a) => s + a.balance, 0);
+}
+
+function detectRecurring() {
+  const byMerchant = {};
+  TRANSACTIONS.filter(t => t.amount < 0).forEach(t => {
+    byMerchant[t.merchant] = byMerchant[t.merchant] || [];
+    byMerchant[t.merchant].push(t);
+  });
+  const recurring = [];
+  Object.entries(byMerchant).forEach(([merchant, txs]) => {
+    const months = new Set(txs.map(t => monthKeyOf(t.date)));
+    if (months.size >= 2) {
+      const avg = txs.reduce((s, t) => s + Math.abs(t.amount), 0) / txs.length;
+      const last = txs.sort((a, b) => b.date.localeCompare(a.date))[0];
+      recurring.push({ merchant, category: last.category, avg, count: txs.length, lastDate: last.date });
+    }
+  });
+  return recurring.sort((a, b) => b.avg - a.avg);
+}
+
+// ---------------- Rendering ----------------
+let currentPage = "dashboard";
+let charts = {};
+
+function destroyCharts() {
+  Object.values(charts).forEach(c => c && c.destroy());
+  charts = {};
+}
+
+function navTo(page) {
+  currentPage = page;
+  document.querySelectorAll(".nav-item").forEach(el => el.classList.toggle("active", el.dataset.page === page));
+  render();
+}
+document.querySelectorAll(".nav-item").forEach(el => el.addEventListener("click", () => navTo(el.dataset.page)));
+
+function render() {
+  destroyCharts();
+  const main = document.getElementById("main");
+  if (currentPage === "dashboard") main.innerHTML = pageDashboard();
+  if (currentPage === "transactions") main.innerHTML = pageTransactions();
+  if (currentPage === "budgets") main.innerHTML = pageBudgets();
+  if (currentPage === "recurring") main.innerHTML = pageRecurring();
+  if (currentPage === "trends") main.innerHTML = pageTrends();
+  afterRender();
+}
+
+function pageDashboard() {
+  const spend = spendingByCategory(currentMonthKey());
+  const totalSpend = Object.values(spend).reduce((a, b) => a + b, 0) - spend.income;
+  const netWorth = totalNetWorth();
+  const prevNetWorth = NET_WORTH_HISTORY[NET_WORTH_HISTORY.length - 2].value;
+  const delta = netWorth - prevNetWorth;
+  const income = TRANSACTIONS.filter(t => monthKeyOf(t.date) === currentMonthKey() && t.category === "income").reduce((s, t) => s + t.amount, 0);
+
+  const recent = [...TRANSACTIONS].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
+
+  return `
+    <h1 class="page-title">Good to see you 👋</h1>
+    <p class="page-sub">Here's where things stand this month.</p>
+    <div class="grid cols-4" style="margin-bottom:18px;">
+      <div class="card hero-networth" style="grid-column: span 2;">
+        <div class="blob"></div>
+        <div class="label">Total Net Worth</div>
+        <div class="amount">${fmtShort(netWorth)}</div>
+        <div class="delta">${delta >= 0 ? "▲" : "▼"} ${fmt(Math.abs(delta))} since last month</div>
+      </div>
+      <div class="card stat-card">
+        <div class="label">Spent this month</div>
+        <div class="val">${fmtShort(totalSpend)}</div>
+        <div class="sub">across ${CATEGORIES.length - 1} categories</div>
+      </div>
+      <div class="card stat-card">
+        <div class="label">Income this month</div>
+        <div class="val">${fmtShort(income)}</div>
+        <div class="sub">1 paycheck so far</div>
+      </div>
+    </div>
+    <div class="grid cols-2">
+      <div class="card">
+        <h3>🥧 Spending by category — August</h3>
+        <div class="chart-wrap"><canvas id="chart-dash-cat"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>🏦 Accounts</h3>
+        ${ACCOUNTS.map(a => `
+          <div class="account-row">
+            <div class="acc-left">
+              <div class="acc-badge" style="background:var(--sun-soft)">${a.emoji}</div>
+              <div><div class="acc-name">${a.name}</div><div class="acc-type">${a.type}</div></div>
+            </div>
+            <div class="acc-bal ${a.balance < 0 ? "neg" : ""}">${fmt(a.balance)}</div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+    <div class="card" style="margin-top:18px;">
+      <h3>🧾 Recent transactions</h3>
+      ${txTableHTML(recent)}
+    </div>
+  `;
+}
+
+function catPill(catId) {
+  const c = catById[catId];
+  return `<span class="cat-pill" style="background:${c.soft};color:${c.color}">${c.emoji} ${c.name}</span>`;
+}
+
+function txTableHTML(list) {
+  if (list.length === 0) return `<div class="empty">No transactions found.</div>`;
+  return `
+    <table class="tx-table">
+      <thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th>Account</th><th style="text-align:right">Amount</th></tr></thead>
+      <tbody>
+        ${list.map(t => `
+          <tr>
+            <td>${t.date}</td>
+            <td>${t.merchant}</td>
+            <td>${catPill(t.category)}</td>
+            <td>${ACCOUNTS.find(a => a.id === t.account)?.name || ""}</td>
+            <td style="text-align:right" class="${t.amount >= 0 ? "amt-pos" : "amt-neg"}">${t.amount >= 0 ? "+" : ""}${fmt(t.amount)}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+let txFilterCategory = "all";
+let txSearch = "";
+
+function pageTransactions() {
+  let list = [...TRANSACTIONS].sort((a, b) => b.date.localeCompare(a.date));
+  if (txFilterCategory !== "all") list = list.filter(t => t.category === txFilterCategory);
+  if (txSearch.trim()) list = list.filter(t => t.merchant.toLowerCase().includes(txSearch.toLowerCase()));
+
+  return `
+    <h1 class="page-title">Transactions</h1>
+    <p class="page-sub">${TRANSACTIONS.length} total transactions across all accounts.</p>
+    <div class="card">
+      <div class="toolbar">
+        <input id="tx-search" placeholder="Search merchant..." value="${txSearch}" />
+        <select id="tx-filter">
+          <option value="all">All categories</option>
+          ${CATEGORIES.map(c => `<option value="${c.id}" ${txFilterCategory === c.id ? "selected" : ""}>${c.emoji} ${c.name}</option>`).join("")}
+        </select>
+        <button class="btn" id="add-tx-btn">+ Add transaction</button>
+      </div>
+      ${txTableHTML(list)}
+    </div>
+  `;
+}
+
+function pageBudgets() {
+  const spend = spendingByCategory(currentMonthKey());
+  const spendCats = CATEGORIES.filter(c => c.id !== "income");
+  return `
+    <h1 class="page-title">Budgets</h1>
+    <p class="page-sub">How August is tracking against your monthly targets.</p>
+    <div class="grid cols-3">
+      ${spendCats.map(c => {
+        const spent = spend[c.id] || 0;
+        const pct = c.budget > 0 ? Math.min(100, (spent / c.budget) * 100) : 0;
+        const over = spent > c.budget;
+        const barColor = over ? "var(--danger)" : c.color;
+        return `
+          <div class="card budget-card" data-cat="${c.id}">
+            <div class="cat-head">
+              <div class="cat-name">${c.emoji} ${c.name}</div>
+              <button class="budget-edit" data-editcat="${c.id}">edit</button>
+            </div>
+            <div class="budget-bar-track"><div class="budget-bar-fill" style="width:${pct}%; background:${barColor}"></div></div>
+            <div class="budget-nums">
+              <span>${fmt(spent)} spent</span>
+              <span>${over ? "over by " + fmt(spent - c.budget) : fmt(c.budget - spent) + " left"}</span>
+            </div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function pageRecurring() {
+  const recurring = detectRecurring();
+  const totalMonthly = recurring.reduce((s, r) => s + r.avg, 0);
+  return `
+    <h1 class="page-title">Recurring</h1>
+    <p class="page-sub">Detected from repeat merchants across your transaction history.</p>
+    <div class="grid cols-3" style="margin-bottom:18px;">
+      <div class="card stat-card"><div class="label">Recurring merchants</div><div class="val">${recurring.length}</div></div>
+      <div class="card stat-card"><div class="label">Est. monthly total</div><div class="val">${fmtShort(totalMonthly)}</div></div>
+      <div class="card stat-card"><div class="label">Largest</div><div class="val" style="font-size:18px;">${recurring[0]?.merchant || "—"}</div></div>
+    </div>
+    <div class="card">
+      ${recurring.map(r => `
+        <div class="recur-row">
+          <div>
+            <div class="recur-name">${catById[r.category].emoji} ${r.merchant}</div>
+            <div class="recur-meta">${catById[r.category].name} · seen ${r.count}x · last on ${r.lastDate}</div>
+          </div>
+          <div class="recur-amt">${fmt(r.avg)}/mo</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function pageTrends() {
+  return `
+    <h1 class="page-title">Trends</h1>
+    <p class="page-sub">Your net worth and spending, over time.</p>
+    <div class="card" style="margin-bottom:18px;">
+      <h3>📈 Net worth — last 6 months</h3>
+      <div class="chart-wrap"><canvas id="chart-networth"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>📊 Spending by category — last 3 months</h3>
+      <div class="chart-wrap"><canvas id="chart-spend-trend"></canvas></div>
+    </div>
+  `;
+}
+
+// ---------------- After-render wiring ----------------
+function afterRender() {
+  if (currentPage === "dashboard") {
+    const spend = spendingByCategory(currentMonthKey());
+    const spendCats = CATEGORIES.filter(c => c.id !== "income" && spend[c.id] > 0);
+    charts.dashCat = new Chart(document.getElementById("chart-dash-cat"), {
+      type: "doughnut",
+      data: {
+        labels: spendCats.map(c => c.name),
+        datasets: [{ data: spendCats.map(c => spend[c.id]), backgroundColor: spendCats.map(c => c.color), borderWidth: 3, borderColor: "#fff" }]
+      },
+      options: { plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { family: "Inter", size: 11 } } } } }
+    });
+  }
+
+  if (currentPage === "transactions") {
+    document.getElementById("tx-search").addEventListener("input", (e) => { txSearch = e.target.value; render(); });
+    document.getElementById("tx-filter").addEventListener("change", (e) => { txFilterCategory = e.target.value; render(); });
+    document.getElementById("add-tx-btn").addEventListener("click", openTxModal);
+  }
+
+  if (currentPage === "budgets") {
+    document.querySelectorAll("[data-editcat]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.editcat;
+        const cat = catById[id];
+        const val = prompt(`New monthly budget for ${cat.name}:`, cat.budget);
+        if (val !== null && !isNaN(parseFloat(val))) {
+          cat.budget = parseFloat(val);
+          render();
+        }
+      });
+    });
+  }
+
+  if (currentPage === "trends") {
+    charts.networth = new Chart(document.getElementById("chart-networth"), {
+      type: "line",
+      data: {
+        labels: NET_WORTH_HISTORY.map(h => h.month),
+        datasets: [{
+          data: NET_WORTH_HISTORY.map(h => h.value),
+          borderColor: "#ff7a6b", backgroundColor: "rgba(255,122,107,0.12)",
+          fill: true, tension: 0.35, pointBackgroundColor: "#ff7a6b", pointRadius: 4
+        }]
+      },
+      options: { plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => "$" + (v/1000) + "k" } } } }
+    });
+
+    const months = ["2026-06", "2026-07", "2026-08"];
+    const spendCats = CATEGORIES.filter(c => c.id !== "income");
+    charts.spendTrend = new Chart(document.getElementById("chart-spend-trend"), {
+      type: "bar",
+      data: {
+        labels: months.map(m => ({ "2026-06": "June", "2026-07": "July", "2026-08": "August" }[m])),
+        datasets: spendCats.map(c => ({
+          label: c.name,
+          data: months.map(m => spendingByCategory(m)[c.id] || 0),
+          backgroundColor: c.color
+        }))
+      },
+      options: {
+        plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 10 } } } },
+        scales: { x: { stacked: true }, y: { stacked: true, ticks: { callback: v => "$" + v } } }
+      }
+    });
+  }
+}
+
+// ---------------- Add transaction modal ----------------
+function openTxModal() {
+  const catSel = document.getElementById("f-category");
+  catSel.innerHTML = CATEGORIES.filter(c => c.id !== "income").map(c => `<option value="${c.id}">${c.emoji} ${c.name}</option>`).join("");
+  const accSel = document.getElementById("f-account");
+  accSel.innerHTML = ACCOUNTS.map(a => `<option value="${a.id}">${a.name}</option>`).join("");
+  document.getElementById("f-merchant").value = "";
+  document.getElementById("f-amount").value = "";
+  document.getElementById("f-date").value = "2026-08-12";
+  document.getElementById("tx-modal-backdrop").classList.add("open");
+}
+document.getElementById("tx-cancel").addEventListener("click", () => document.getElementById("tx-modal-backdrop").classList.remove("open"));
+document.getElementById("tx-save").addEventListener("click", () => {
+  const merchant = document.getElementById("f-merchant").value.trim();
+  const amount = parseFloat(document.getElementById("f-amount").value);
+  const category = document.getElementById("f-category").value;
+  const account = document.getElementById("f-account").value;
+  const date = document.getElementById("f-date").value;
+  if (!merchant || isNaN(amount) || !date) { alert("Please fill in merchant, amount, and date."); return; }
+  TRANSACTIONS.push({ id: nextId++, date, merchant, amount, category, account });
+  const acc = ACCOUNTS.find(a => a.id === account);
+  if (acc) acc.balance += amount;
+  document.getElementById("tx-modal-backdrop").classList.remove("open");
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
